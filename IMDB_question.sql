@@ -15,6 +15,24 @@ USE imdb;
 
 -- Q1. Find the total number of rows in each table of the schema?
 -- Type your code below:
+SELECT 
+	TABLE_NAME, 
+    TABLE_ROWS 
+FROM 
+	INFORMATION_SCHEMA.tables
+WHERE
+	TABLE_SCHEMA = "IMDB";
+    
+SELECT 
+	*
+FROM
+	INFORMATION_SCHEMA.columns
+WHERE 
+	TABLE_NAME = "MOVIE";
+    
+DESC MOVIE;
+
+SHOW TABLES;
 
 
 
@@ -27,6 +45,18 @@ USE imdb;
 -- Q2. Which columns in the movie table have null values?
 -- Type your code below:
 
+SELECT 
+	SUM(CASE WHEN ID IS NULL THEN 1 ELSE 0 END) AS "ID MISSING",
+    SUM(CASE WHEN TITLE IS NULL THEN 1 ELSE 0 END) AS "TITLE MISSING",
+    SUM(CASE WHEN YEAR IS NULL THEN 1 ELSE 0 END) AS "YEAR MISSING",
+    SUM(CASE WHEN DATE_PUBLISHED IS NULL THEN 1 ELSE 0 END) AS "DATE_PUBLISHED MISSING",
+    SUM(CASE WHEN DURATION IS NULL THEN 1 ELSE 0 END) AS "DURATION MISSING",
+    SUM(CASE WHEN COUNTRY IS NULL THEN 1 ELSE 0 END) AS "COUNTRY MISSING",
+	SUM(CASE WHEN WORLWIDE_GROSS_INCOME IS NULL THEN 1 ELSE 0 END) AS "WORLDWIDE_GROSS_INCOME MISSING",
+	SUM(CASE WHEN LANGUAGES IS NULL THEN 1 ELSE 0 END) AS "LANGUAGES MISSING",
+	SUM(CASE WHEN PRODUCTION_COMPANY IS NULL THEN 1 ELSE 0 END) AS "PRODUCTION_COMPANY MISSING"
+FROM
+	MOVIE;
 
 
 
@@ -35,7 +65,7 @@ USE imdb;
 
 
 
--- Now as you can see four columns of the movie table has null values. Let's look at the at the movies released each year. 
+-- Now as you can see four columns of the movie table has null values. Let's look at the movies released each year. 
 -- Q3. Find the total number of movies released each year? How does the trend look month wise? (Output expected)
 
 /* Output format for the first part:
@@ -59,8 +89,26 @@ Output format for the second part of the question:
 +---------------+-------------------+ */
 -- Type your code below:
 
+SELECT 
+	YEAR,
+	COUNT(ID)
+FROM 
+	MOVIE
+GROUP BY 
+	YEAR
+ORDER BY
+	YEAR ASC;
 
-
+SELECT 
+	MONTH(DATE_PUBLISHED) AS "MONTH",
+	COUNT(ID)
+FROM 
+	MOVIE
+GROUP BY 
+	MONTH
+ORDER BY
+	COUNT(ID) DESC;
+    
 
 
 
@@ -74,6 +122,36 @@ We know USA and India produces huge number of movies each year. Lets find the nu
   
 -- Q4. How many movies were produced in the USA or India in the year 2019??
 -- Type your code below:
+
+SELECT 
+	COUNTRY,
+    COUNT(ID)
+FROM 
+	MOVIE
+WHERE 
+	YEAR = "2019"
+AND
+	(COUNTRY LIKE "%USA%" 
+    OR
+    COUNTRY LIKE "%INDIA%")
+GROUP BY 
+	COUNTRY;
+
+SELECT 
+	CASE 
+		WHEN COUNTRY LIKE "%USA%" THEN "USA"
+        WHEN COUNTRY LIKE "%INDIA%" THEN "INDIA"
+		ELSE "OTHER"
+	END AS "COUNTRY_GROUP",
+    COUNT(ID)
+FROM 
+	MOVIE
+WHERE 
+	YEAR = "2019"
+AND
+	(COUNTRY LIKE "%USA%" OR COUNTRY LIKE "%INDIA%")
+GROUP BY 
+	COUNTRY_GROUP;
 
 
 
@@ -91,6 +169,13 @@ Let’s find out the different genres in the dataset.*/
 -- Q5. Find the unique list of the genres present in the data set?
 -- Type your code below:
 
+SELECT 
+	DISTINCT(GENRE)
+FROM
+	GENRE;
+	
+
+
 
 
 
@@ -106,6 +191,20 @@ Combining both the movie and genres table can give more interesting insights. */
 
 -- Q6.Which genre had the highest number of movies produced overall?
 -- Type your code below:
+
+SELECT 
+	G.GENRE,
+    COUNT(M.ID) AS "COUNT"
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+GROUP BY 
+	G.GENRE
+ORDER BY 
+	COUNT DESC;
 
 
 
@@ -124,7 +223,23 @@ So, let’s find out the count of movies that belong to only one genre.*/
 -- Type your code below:
 
 
-
+SELECT COUNT(*) FROM (SELECT 
+    G.MOVIE_ID,
+    COUNT(G.MOVIE_ID)
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+GROUP BY 
+    G.MOVIE_ID
+HAVING 
+	COUNT(G.MOVIE_ID) = 1) AS A;
+    
+    
+    
+SELECT COUNT(DISTINCT(MOVIE_ID)) FROM GENRE;
 
 
 
@@ -151,6 +266,21 @@ Now, let's find out the possible duration of RSVP Movies’ next project.*/
 +---------------+-------------------+ */
 -- Type your code below:
 
+SELECT 
+	G.GENRE,
+	AVG(M.DURATION) AS "AVERAGE"
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+GROUP BY 
+    G.GENRE
+ORDER BY 
+	AVERAGE DESC;
+	
+
 
 
 
@@ -174,7 +304,24 @@ Lets find where the movies of genre 'thriller' on the basis of number of movies.
 +---------------+-------------------+---------------------+*/
 -- Type your code below:
 
-
+SELECT *
+FROM
+(SELECT 
+	G.GENRE, 
+    G.MOVIE_ID,
+	ROW_NUMBER() OVER (
+		PARTITION BY G.GENRE
+        ORDER BY MOVIE_ID DESC
+        ROWS BETWEEN 1 AND 6) AS RNO
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+GROUP BY 
+    G.GENRE,
+    G.MOVIE_ID) AS A;
 
 
 
