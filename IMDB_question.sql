@@ -304,15 +304,10 @@ Lets find where the movies of genre 'thriller' on the basis of number of movies.
 +---------------+-------------------+---------------------+*/
 -- Type your code below:
 
-SELECT *
-FROM
-(SELECT 
-	G.GENRE, 
-    G.MOVIE_ID,
-	ROW_NUMBER() OVER (
-		PARTITION BY G.GENRE
-        ORDER BY MOVIE_ID DESC
-        ROWS BETWEEN 1 AND 6) AS RNO
+SELECT 
+	G.GENRE,
+	RANK() OVER (
+        ORDER BY count(MOVIE_ID) DESC)
 FROM 
 	MOVIE M
 JOIN 
@@ -320,8 +315,7 @@ JOIN
 ON 
 	M.ID = G.MOVIE_ID
 GROUP BY 
-    G.GENRE,
-    G.MOVIE_ID) AS A;
+    G.GENRE;
 
 
 
@@ -352,6 +346,16 @@ To start with lets get the min and max values of different columns in the table*
 +---------------+-------------------+---------------------+----------------------+-----------------+-----------------+*/
 -- Type your code below:
 
+SELECT 
+	MIN(avg_rating) AS MIN_avg_rating,
+    MAX(avg_rating) AS MAX_avg_rating,
+    MIN(total_votes) AS MIN_total_votes ,
+    MAX(total_votes) AS MAX_total_votes,
+    MIN(median_rating) AS MIN_median_rating,
+    MAX(median_rating) AS MAX_median_rating
+FROM 
+	RATINGS;
+
 
 
 
@@ -376,7 +380,42 @@ Now, let’s find out the top 10 movies based on average rating.*/
 -- Type your code below:
 -- Keep in mind that multiple movies can be at the same rank. You only have to find out the top 10 movies (if there are more than one movies at the 10th place, consider them all.)
 
+SELECT * FROM (SELECT 
+	M.TITLE, 
+    R.AVG_RATING, 
+    DENSE_RANK() OVER(
+		ORDER BY R.AVG_RATING DESC) AS MOVIE_RANK
+FROM 
+	MOVIE M
+JOIN 
+	RATINGS R
+ON 
+	M.ID = R.MOVIE_ID) AS A
+WHERE 
+    MOVIE_RANK < 11;
+    
 
+    
+WITH A AS
+(
+SELECT 
+	M.TITLE, 
+    R.AVG_RATING, 
+    DENSE_RANK() OVER(
+		ORDER BY R.AVG_RATING DESC) AS MOVIE_RANK
+FROM 
+	MOVIE M
+JOIN 
+	RATINGS R
+ON 
+	M.ID = R.MOVIE_ID)
+
+SELECT 
+	* 
+FROM 
+	A
+WHERE A.MOVIE_RANK < 11;
+	
 
 
 
@@ -400,6 +439,17 @@ Summarising the ratings table based on the movie counts by median rating can giv
 -- Type your code below:
 -- Order by is good to have
 
+SELECT 
+	median_rating,
+    COUNT(MOVIE_ID) AS MOVIE_COUNT
+FROM 
+	RATINGS
+GROUP BY 
+	median_rating
+ORDER BY 
+	median_rating ASC;
+	
+
 
 
 
@@ -422,7 +472,25 @@ Now, let's find out the production house with which RSVP Movies can partner for 
 -- Type your code below:
 
 
+SELECT
+	M.production_company,
+    COUNT(*) AS movie_count,
+    RANK() OVER(
+		ORDER BY  COUNT(*) DESC) AS prod_company_rank
+FROM 
+	MOVIE M 
+JOIN
+	RATINGS R 
+ON 
+	M.ID = R.MOVIE_ID
+WHERE 
+	AVG_RATING > 8
+AND 
+	production_company IS NOT NULL
+GROUP BY 
+	production_company;
 
+        
 
 
 
@@ -444,7 +512,30 @@ Now, let's find out the production house with which RSVP Movies can partner for 
 +---------------+-------------------+ */
 -- Type your code below:
 
-
+SELECT 
+	GENRE,
+    COUNT(ID) MOVIE_COUNT
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+JOIN
+	RATINGS R
+ON 	
+	M.ID = R.MOVIE_ID
+WHERE 
+	(DATE_PUBLISHED BETWEEN "2017/03/01" AND "2017/03/31")
+AND 
+	TOTAL_VOTES > 1000
+AND 
+	COUNTRY LIKE "%USA%"
+GROUP BY 
+	GENRE
+ORDER BY 
+	MOVIE_COUNT DESC;
+	
 
 
 
@@ -465,7 +556,27 @@ Now, let's find out the production house with which RSVP Movies can partner for 
 +---------------+-------------------+---------------------+*/
 -- Type your code below:
 
-
+SELECT 
+	M.TITLE,
+    R.AVG_RATING,
+    R.MEDIAN_RATING,
+    G.GENRE
+FROM 
+	MOVIE M
+JOIN 
+	GENRE G
+ON 
+	M.ID = G.MOVIE_ID
+JOIN
+	RATINGS R
+ON 	
+	M.ID = R.MOVIE_ID
+WHERE 
+	R.AVG_RATING > 8
+AND 
+	M.TITLE LIKE "THE%"
+ORDER BY	
+	R.AVG_RATING;
 
 
 
@@ -474,10 +585,23 @@ Now, let's find out the production house with which RSVP Movies can partner for 
 
 
 -- You should also try your hand at median rating and check whether the ‘median rating’ column gives any significant insights.
--- Q16. Of the movies released between 1 April 2018 and 1 April 2019, how many were given a median rating of 8?
+-- Q16. Number Of the movies released between 1 April 2018 and 1 April 2019, how many were given a median rating of 8?
 -- Type your code below:
 
-
+SELECT 
+	COUNT(*) AS "NUMBER OF MOVIES"
+FROM 
+	MOVIE M
+JOIN
+	RATINGS R
+ON 	
+	M.ID = R.MOVIE_ID
+WHERE 
+	(DATE_PUBLISHED BETWEEN "2018/04/01" AND "2019/04/01")
+AND
+	R.MEDIAN_RATING = 8
+ORDER BY 
+	M.TITLE;
 
 
 
@@ -490,8 +614,32 @@ Now, let's find out the production house with which RSVP Movies can partner for 
 -- Hint: Here you have to find the total number of votes for both German and Italian movies.
 -- Type your code below:
 
-
-
+SELECT
+	 CASE 
+		#WHEN LANGUAGES LIKE "%GERMAN%" AND LANGUAGES LIKE "%ITALIAN%" THEN "BOTH" 
+        WHEN LANGUAGES LIKE "%ITALIAN%" THEN "ITALIAN" 
+		WHEN LANGUAGES LIKE "%GERMAN%" THEN "GERMAN"
+        ELSE "OTHER"
+     END AS "GRP",
+    SUM(TOTAL_VOTES) AS "TOTAL_VOTES"
+FROM 
+	MOVIE M
+JOIN
+	RATINGS R
+ON 	
+	M.ID = R.MOVIE_ID
+WHERE 
+	LANGUAGES LIKE "%GERMAN%"
+OR
+    LANGUAGES LIKE "%ITALIAN%"
+#	(LANGUAGES LIKE "%ITALIAN%" AND LANGUAGES LIKE "%GERMAN%")
+GROUP BY 
+	GRP;
+    
+    
+SELECT DISTINCT(LANGUAGES)
+FROM MOVIE;
+	
 
 
 
