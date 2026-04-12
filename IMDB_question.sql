@@ -666,8 +666,30 @@ Let’s begin by searching for null values in the tables.*/
 +---------------+-------------------+---------------------+----------------------+*/
 -- Type your code below:
 
+SELECT
+	SUM(CASE WHEN NAME IS NULL THEN 1 ELSE 0 END),
+    SUM(CASE WHEN HEIGHT IS NULL THEN 1 ELSE 0 END),
+    SUM(CASE WHEN DATE_OF_BIRTH IS NULL THEN 1 ELSE 0 END),
+    SUM(CASE WHEN KNOWN_FOR_MOVIES IS NULL THEN 1 ELSE 0 END)
+FROM 
+	NAMES;
 
-
+SELECT
+	SUM(NAME IS NULL),
+    SUM(HEIGHT IS NULL),
+    SUM(DATE_OF_BIRTH IS NULL),
+    SUM(KNOWN_FOR_MOVIES IS NULL)
+FROM 
+	NAMES;
+    
+    
+SELECT
+	COUNT(*) - COUNT(NAME),
+    COUNT(*) - COUNT(HEIGHT),
+    COUNT(*) - COUNT(DATE_OF_BIRTH),
+    COUNT(*) - COUNT(KNOWN_FOR_MOVIES)
+FROM 
+	NAMES;
 
 
 
@@ -695,11 +717,142 @@ Let’s find out the top three directors in the top three genres who can be hire
 
 
 
+WITH TOP_GENRE AS (SELECT
+	GENRE,
+    COUNT(DISTINCT(G.MOVIE_ID)) AS "COUNT"
+FROM 
+	GENRE G
+JOIN
+	 RATINGS R ON G.MOVIE_ID = R.MOVIE_ID
+WHERE 
+	AVG_RATING > 8
+GROUP BY 
+	GENRE
+ORDER BY 
+	COUNT(G.MOVIE_ID) DESC
+LIMIT 3)
+
+
+SELECT
+	N.NAME AS DIRECTOR_NAME,
+	COUNT(DISTINCT(M.ID)) AS "MOVIE_COUNT"
+FROM 
+	MOVIE M 
+JOIN 	
+	DIRECTOR_MAPPING D ON M.ID = D.MOVIE_ID
+JOIN 
+	NAMES N ON D.NAME_ID = N.ID
+JOIN
+	RATINGS R ON M.ID = R.MOVIE_ID 
+JOIN
+	GENRE G ON M.ID = G.MOVIE_ID
+JOIN 
+	TOP_GENRE TG ON G.GENRE = TG.GENRE
+WHERE 
+	AVG_RATING > 8
+GROUP BY 
+	N.NAME
+ORDER BY 
+	COUNT(M.ID) DESC,
+    N.NAME
+LIMIT 25;
+
+
+
+
+
+
+SELECT
+	N.NAME AS DIRECTOR_NAME,
+	COUNT(DISTINCT(M.ID)) AS MOVIE_COUNT
+FROM 
+	MOVIE M 
+JOIN 	
+	DIRECTOR_MAPPING D ON M.ID = D.MOVIE_ID
+JOIN 
+	NAMES N ON D.NAME_ID = N.ID
+JOIN
+	GENRE G ON M.ID = G.MOVIE_ID
+JOIN
+	RATINGS R ON M.ID = R.MOVIE_ID
+WHERE
+	AVG_RATING > 8
+GROUP BY 
+	N.NAME
+ORDER BY
+	COUNT(M.ID) DESC
+LIMIT 3;
+	
+    
+
+SELECT
+	N.NAME AS DIRECTOR_NAME,
+    TITLE,
+    AVG_RATING
+FROM 
+	MOVIE M 
+JOIN 	
+	DIRECTOR_MAPPING D ON M.ID = D.MOVIE_ID
+JOIN 
+	NAMES N ON D.NAME_ID = N.ID
+JOIN
+	GENRE G ON M.ID = G.MOVIE_ID
+JOIN
+	RATINGS R ON M.ID = R.MOVIE_ID
+WHERE
+	AVG_RATING > 8
+AND 
+	N.NAME IN ('Anthony Russo', 'Joe Russo', 'James Mangold');
+    
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 /* James Mangold can be hired as the director for RSVP's next project. Do you remeber his movies, 'Logan' and 'The Wolverine'. 
 Now, let’s find out the top two actors.*/
+
+
+
+
+SELECT TITLE FROM MOVIE
+WHERE TITLE LIKE "T%"
+ORDER BY TITLE;
+
+
+
+
+
+SELECT
+	N.NAME AS DIRECTOR_NAME,
+	TITLE
+FROM 
+	MOVIE M 
+JOIN 	
+	DIRECTOR_MAPPING D ON M.ID = D.MOVIE_ID
+JOIN 
+	NAMES N ON D.NAME_ID = N.ID
+JOIN
+	GENRE G ON M.ID = G.MOVIE_ID
+JOIN
+	RATINGS R ON M.ID = R.MOVIE_ID
+WHERE
+	UPPER(TITLE) LIKE "THE WOLVERINE";
+
+
+
+
+
 
 -- Q20. Who are the top two actors whose movies have a median rating >= 8?
 /* Output format:
@@ -711,6 +864,34 @@ Now, let’s find out the top two actors.*/
 |	.			|		.			|
 +---------------+-------------------+ */
 -- Type your code below:
+
+
+SELECT * FROM ROLE_MAPPING;
+
+
+SELECT
+	N.NAME AS ACTOR_NAME,
+	COUNT(DISTINCT(M.ID)) AS "MOVIE_COUNT"
+FROM 
+	MOVIE M 
+JOIN 	
+	ROLE_MAPPING D ON M.ID = D.MOVIE_ID
+JOIN 
+	NAMES N ON D.NAME_ID = N.ID
+JOIN
+	RATINGS R ON M.ID = R.MOVIE_ID 
+WHERE 
+	MEDIAN_RATING >= 8
+AND 
+	CATEGORY = "ACTOR"
+GROUP BY 
+	N.NAME
+ORDER BY 
+	COUNT(M.ID) DESC
+LIMIT 25;
+
+
+
 
 
 
